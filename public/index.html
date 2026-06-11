@@ -94,13 +94,13 @@
             <form id="product-form">
                 <input type="hidden" id="product-id">
                 
-                <div class="form-group image-upload">
-                    <div class="image-preview" id="image-preview">
-                        <i class="ph ph-image"></i>
-                        <span>Click para subir foto</span>
+                <div class="form-group image-upload" style="align-items: center; justify-content: center;">
+                    <div class="image-preview" id="image-preview" style="margin-bottom: 12px; width: 140px; height: 140px; border-radius: 50%;">
+                        <i class="ph ph-image" style="font-size: 2rem; margin-bottom: 5px;"></i>
+                        <span style="font-size: 0.8rem; text-align: center;">Subir local</span>
                     </div>
-                    <button type="button" class="btn-secondary" id="btn-search-image" style="margin-top: 10px; width: 100%; padding: 8px; font-size: 0.9rem;">
-                        <i class="ph ph-magnifying-glass"></i> Buscar en internet
+                    <button type="button" class="btn-secondary" id="btn-search-image" style="display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);">
+                        <i class="ph ph-magnifying-glass"></i> Buscar imagen en Google
                     </button>
                     <input type="file" id="product-image" accept="image/*" style="display: none;">
                     <input type="hidden" id="product-image-data">

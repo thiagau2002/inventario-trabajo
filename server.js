@@ -2,7 +2,7 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const path = require('path');
-const gis = require('g-i-s');
+const google = require('googlethis');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,18 +41,17 @@ db.serialize(() => {
 // --- Rutas API REST ---
 
 // Buscar imágenes en internet
-app.get('/api/search-images', (req, res) => {
+app.get('/api/search-images', async (req, res) => {
     const query = req.query.q;
     if (!query) return res.status(400).json({ error: 'Query is required' });
     
-    gis(query + ' png', (error, results) => {
-        if (error) {
-            res.status(500).json({ error: 'Failed to fetch images' });
-        } else {
-            // Devolver las 10 primeras URLs
-            res.json(results.slice(0, 10).map(r => r.url));
-        }
-    });
+    try {
+        const results = await google.image(query + ' png transparent', { safe: false });
+        res.json(results.slice(0, 12).map(r => r.url));
+    } catch (err) {
+        console.error('Image search error:', err);
+        res.status(500).json({ error: 'Failed to fetch images' });
+    }
 });
 
 // Obtener todos los elementos

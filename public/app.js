@@ -252,8 +252,8 @@ function resetImagePreview() {
     imgDataInput.value = '';
     imagePreview.style.backgroundImage = 'none';
     imagePreview.innerHTML = `
-        <i class="ph ph-image"></i>
-        <span>Click para subir foto</span>
+        <i class="ph ph-image" style="font-size: 2rem; margin-bottom: 5px;"></i>
+        <span style="font-size: 0.8rem; text-align: center;">Subir local</span>
     `;
 }
 

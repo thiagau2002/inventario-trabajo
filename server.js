@@ -2,7 +2,7 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const path = require('path');
-const google = require('googlethis');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,6 +15,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Base de Datos SQLite
 const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'database.sqlite');
+const dbDir = path.dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+}
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) console.error('Error al conectar con la base de datos:', err);
     else console.log('Conectado a la base de datos SQLite.');
@@ -46,8 +50,19 @@ app.get('/api/search-images', async (req, res) => {
     if (!query) return res.status(400).json({ error: 'Query is required' });
     
     try {
-        const results = await google.image(query + ' png transparent', { safe: false });
-        res.json(results.slice(0, 12).map(r => r.url));
+        const response = await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=15&prop=imageinfo&iiprop=url&format=json`);
+        const data = await response.json();
+        
+        if (!data.query || !data.query.pages) {
+            return res.json([]);
+        }
+        
+        const pages = data.query.pages;
+        const urls = Object.values(pages)
+            .map(p => p.imageinfo && p.imageinfo[0] ? p.imageinfo[0].url : null)
+            .filter(url => url && url.match(/\.(jpeg|jpg|gif|png)$/i));
+            
+        res.json(urls);
     } catch (err) {
         console.error('Image search error:', err);
         res.status(500).json({ error: 'Failed to fetch images' });

@@ -19,10 +19,10 @@
                 <h2>Inventario</h2>
             </div>
             <ul class="nav-links">
-                <li class="active"><i class="ph ph-squares-four"></i> Dashboard</li>
-                <li><i class="ph ph-package"></i> Elementos</li>
-                <li><i class="ph ph-wrench"></i> Reparaciones</li>
-                <li><i class="ph ph-users"></i> Asignaciones</li>
+                <li class="active" id="nav-dashboard"><i class="ph ph-squares-four"></i> Dashboard</li>
+                <li id="nav-items"><i class="ph ph-package"></i> Elementos</li>
+                <li id="nav-repairs"><i class="ph ph-wrench"></i> Reparaciones</li>
+                <li id="nav-assignments"><i class="ph ph-users"></i> Asignaciones</li>
             </ul>
             <div class="storage-info">
                 <p>Almacenamiento Local</p>
@@ -177,8 +177,12 @@
     <div class="modal-overlay" id="image-search-modal" style="display: none; z-index: 2000;">
         <div class="modal glass-panel" style="max-width: 600px; width: 90%;">
             <div class="modal-header">
-                <h3>Seleccionar Imagen</h3>
+                <h3>Buscar Imagen</h3>
                 <button type="button" class="btn-close" id="btn-close-search-modal"><i class="ph ph-x"></i></button>
+            </div>
+            <div style="padding: 0 10px; margin-bottom: 15px; display: flex; gap: 8px;">
+                <input type="text" id="modal-search-input" class="glass-input" placeholder="Ej: Monitor, Laptop..." style="flex: 1;">
+                <button type="button" class="btn-primary" id="btn-trigger-search"><i class="ph ph-magnifying-glass"></i></button>
             </div>
             <div class="image-search-results" id="image-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; padding: 10px;">
             </div>

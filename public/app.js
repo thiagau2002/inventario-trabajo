@@ -28,6 +28,8 @@ const searchModal = document.getElementById('image-search-modal');
 const btnCloseSearchModal = document.getElementById('btn-close-search-modal');
 const searchResultsContainer = document.getElementById('image-search-results');
 const searchLoading = document.getElementById('image-search-loading');
+const modalSearchInput = document.getElementById('modal-search-input');
+const btnTriggerSearch = document.getElementById('btn-trigger-search');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,8 +46,30 @@ function setupEventListeners() {
     // Image Upload & Search
     imagePreview.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', handleImageUpload);
-    btnSearchImage.addEventListener('click', handleInternetImageSearch);
+    btnSearchImage.addEventListener('click', () => {
+        const productName = document.getElementById('product-name').value.trim();
+        modalSearchInput.value = productName;
+        searchModal.style.display = 'flex';
+        if (productName) performInternetSearch(productName);
+    });
+    btnTriggerSearch.addEventListener('click', () => {
+        const query = modalSearchInput.value.trim();
+        if (query) performInternetSearch(query);
+    });
+    modalSearchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const query = modalSearchInput.value.trim();
+            if (query) performInternetSearch(query);
+        }
+    });
     btnCloseSearchModal.addEventListener('click', closeSearchModal);
+
+    // Sidebar navigation
+    document.getElementById('nav-dashboard').addEventListener('click', () => setNav('dashboard'));
+    document.getElementById('nav-items').addEventListener('click', () => setNav('items'));
+    document.getElementById('nav-repairs').addEventListener('click', () => setNav('repairs'));
+    document.getElementById('nav-assignments').addEventListener('click', () => setNav('assignments'));
     
     // Form Submit
     productForm.addEventListener('submit', handleFormSubmit);
@@ -189,25 +213,18 @@ function handleImageUpload(e) {
     reader.readAsDataURL(file);
 }
 
-async function handleInternetImageSearch() {
-    const productName = document.getElementById('product-name').value.trim();
-    if (!productName) {
-        showToast('Por favor escribe el Nombre del Elemento primero para buscar', 'error');
-        return;
-    }
-    
-    searchModal.style.display = 'flex';
+async function performInternetSearch(query) {
     searchResultsContainer.innerHTML = '';
     searchLoading.style.display = 'block';
     
     try {
-        const response = await fetch(`/api/search-images?q=${encodeURIComponent(productName)}`);
+        const response = await fetch(`/api/search-images?q=${encodeURIComponent(query)}`);
         const urls = await response.json();
         
         searchLoading.style.display = 'none';
         
         if (!urls || urls.length === 0 || urls.error) {
-            searchResultsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No se encontraron imágenes</p>';
+            searchResultsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No se encontraron imágenes. Intenta buscar con menos palabras o un nombre más general.</p>';
             return;
         }
         
@@ -369,11 +386,32 @@ function updateStockBadge(product) {
 }
 
 // Rendering
+let currentNavView = 'dashboard';
+
+function setNav(view) {
+    currentNavView = view;
+    // Update active class
+    document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
+    document.getElementById(`nav-${view}`).classList.add('active');
+    
+    renderProducts();
+}
+
 function renderProducts() {
     const searchTerm = searchInput.value.toLowerCase();
     const filterCat = categoryFilter.value;
     
     const filtered = products.filter(p => {
+        // Navigation Filters
+        if (currentNavView === 'items') {
+            // Show all (maybe hide repairs?)
+        } else if (currentNavView === 'repairs') {
+            if (p.condition !== 'Para reparar') return false;
+        } else if (currentNavView === 'assignments') {
+            if (!p.assigned || p.assigned.trim() === '') return false;
+        }
+        
+        // Search & Cat Filters
         const matchName = p.name.toLowerCase().includes(searchTerm);
         const matchCat = p.category.toLowerCase().includes(searchTerm);
         const matchAssigned = (p.assigned || '').toLowerCase().includes(searchTerm);

@@ -99,6 +99,9 @@
                         <i class="ph ph-image"></i>
                         <span>Click para subir foto</span>
                     </div>
+                    <button type="button" class="btn-secondary" id="btn-search-image" style="margin-top: 10px; width: 100%; padding: 8px; font-size: 0.9rem;">
+                        <i class="ph ph-magnifying-glass"></i> Buscar en internet
+                    </button>
                     <input type="file" id="product-image" accept="image/*" style="display: none;">
                     <input type="hidden" id="product-image-data">
                 </div>
@@ -167,6 +170,21 @@
                     <button type="submit" class="btn-primary">Guardar Elemento</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal for Image Search -->
+    <div class="modal-overlay" id="image-search-modal" style="display: none; z-index: 2000;">
+        <div class="modal glass-panel" style="max-width: 600px; width: 90%;">
+            <div class="modal-header">
+                <h3>Seleccionar Imagen</h3>
+                <button type="button" class="btn-close" id="btn-close-search-modal"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="image-search-results" id="image-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; padding: 10px;">
+            </div>
+            <div style="text-align: center; margin-top: 10px; display: none;" id="image-search-loading">
+                <p>Buscando en internet...</p>
+            </div>
         </div>
     </div>
 

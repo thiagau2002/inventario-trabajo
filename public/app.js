@@ -201,7 +201,7 @@ async function handleInternetImageSearch() {
     searchLoading.style.display = 'block';
     
     try {
-        const response = await fetch(\`/api/search-images?q=\${encodeURIComponent(productName)}\`);
+        const response = await fetch(`/api/search-images?q=${encodeURIComponent(productName)}`);
         const urls = await response.json();
         
         searchLoading.style.display = 'none';
@@ -227,7 +227,7 @@ async function handleInternetImageSearch() {
             
             img.addEventListener('click', () => {
                 imgDataInput.value = url;
-                imagePreview.style.backgroundImage = \`url(\${url})\`;
+                imagePreview.style.backgroundImage = `url(${url})`;
                 imagePreview.innerHTML = '';
                 closeSearchModal();
             });
@@ -277,7 +277,7 @@ async function handleFormSubmit(e) {
 
     try {
         if (editModeId) {
-            await fetch(\`\${API_URL}/\${editModeId}\`, {
+            await fetch(`${API_URL}/${editModeId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(productData)
@@ -303,7 +303,7 @@ async function handleFormSubmit(e) {
 window.deleteProduct = async function(id) {
     if(confirm('¿Estás seguro de que deseas eliminar este elemento?')) {
         try {
-            await fetch(\`\${API_URL}/\${id}\`, { method: 'DELETE' });
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
             showToast('Elemento eliminado', 'success');
             await loadData();
         } catch (err) {
@@ -322,13 +322,13 @@ window.changeQuantity = async function(id, delta) {
         const newQty = product.quantity + delta;
         if (newQty >= 0) {
             product.quantity = newQty; // optimisic update
-            const qtyElement = document.getElementById(\`qty-\${id}\`);
+            const qtyElement = document.getElementById(`qty-${id}`);
             if (qtyElement) qtyElement.textContent = newQty;
             updateStockBadge(product);
             updateStats();
 
             try {
-                await fetch(\`\${API_URL}/\${id}\`, {
+                await fetch(`${API_URL}/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(product)
@@ -346,7 +346,7 @@ window.changeQuantity = async function(id, delta) {
 }
 
 function updateStockBadge(product) {
-    const badge = document.getElementById(\`badge-\${product.id}\`);
+    const badge = document.getElementById(`badge-${product.id}`);
     if(!badge) return;
     
     badge.className = 'status-badge';
@@ -386,12 +386,12 @@ function renderProducts() {
     productsGrid.innerHTML = '';
 
     if (filtered.length === 0) {
-        productsGrid.innerHTML = \`
+        productsGrid.innerHTML = `
             <div class="empty-state">
                 <i class="ph ph-package"></i>
                 <p>No se encontraron elementos.</p>
             </div>
-        \`;
+        `;
         return;
     }
 
@@ -413,43 +413,43 @@ function renderProducts() {
         }
 
         const imgHtml = product.image 
-            ? \`<img src="\${product.image}" alt="\${product.name}" class="product-img">\`
-            : \`<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.2);"><i class="ph ph-image" style="font-size:3rem;"></i></div>\`;
+            ? `<img src="${product.image}" alt="${product.name}" class="product-img">`
+            : `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.2);"><i class="ph ph-image" style="font-size:3rem;"></i></div>`;
 
         const card = document.createElement('div');
         card.className = 'product-card glass-panel';
-        card.innerHTML = \`
+        card.innerHTML = `
             <div class="product-img-wrapper">
-                <span class="status-badge \${statusClass}" id="badge-\${product.id}" style="\${customBadgeStyle}">\${statusText}</span>
-                \${imgHtml}
+                <span class="status-badge ${statusClass}" id="badge-${product.id}" style="${customBadgeStyle}">${statusText}</span>
+                ${imgHtml}
             </div>
             <div class="product-info">
-                <span class="product-category">\${product.category}</span>
-                <h3 class="product-name" title="\${product.name}" style="margin-bottom: 0.2rem;">\${product.name}</h3>
+                <span class="product-category">${product.category}</span>
+                <h3 class="product-name" title="${product.name}" style="margin-bottom: 0.2rem;">${product.name}</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    \${product.brand ? \`<span>\${product.brand}</span>\` : ''} 
-                    \${product.serial ? \`<span style="margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--glass-border);"><i class="ph ph-barcode" style="vertical-align: middle;"></i> \${product.serial}</span>\` : ''}
+                    ${product.brand ? `<span>${product.brand}</span>` : ''} 
+                    ${product.serial ? `<span style="margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--glass-border);"><i class="ph ph-barcode" style="vertical-align: middle;"></i> ${product.serial}</span>` : ''}
                 </div>
                 
                 <div class="item-details-grid">
-                    <div title="Ubicación"><i class="ph ph-map-pin"></i> \${product.location || 'Sin ubicación'}</div>
-                    <div title="Estado"><i class="ph ph-activity"></i> \${product.condition || 'N/A'}</div>
-                    \${product.assigned ? \`<div class="assigned-row" title="Asignado a"><i class="ph ph-user"></i> \${product.assigned}</div>\` : ''}
+                    <div title="Ubicación"><i class="ph ph-map-pin"></i> ${product.location || 'Sin ubicación'}</div>
+                    <div title="Estado"><i class="ph ph-activity"></i> ${product.condition || 'N/A'}</div>
+                    ${product.assigned ? `<div class="assigned-row" title="Asignado a"><i class="ph ph-user"></i> ${product.assigned}</div>` : ''}
                 </div>
                 
                 <div class="product-controls">
                     <div class="qty-control">
-                        <button class="qty-btn" onclick="changeQuantity('\${product.id}', -1)"><i class="ph ph-minus"></i></button>
-                        <span class="qty-display" id="qty-\${product.id}">\${product.quantity}</span>
-                        <button class="qty-btn" onclick="changeQuantity('\${product.id}', 1)"><i class="ph ph-plus"></i></button>
+                        <button class="qty-btn" onclick="changeQuantity('${product.id}', -1)"><i class="ph ph-minus"></i></button>
+                        <span class="qty-display" id="qty-${product.id}">${product.quantity}</span>
+                        <button class="qty-btn" onclick="changeQuantity('${product.id}', 1)"><i class="ph ph-plus"></i></button>
                     </div>
                     <div class="card-actions">
-                        <button class="btn-icon" onclick="editProduct('\${product.id}')" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-                        <button class="btn-icon delete" onclick="deleteProduct('\${product.id}')" title="Eliminar"><i class="ph ph-trash"></i></button>
+                        <button class="btn-icon" onclick="editProduct('${product.id}')" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                        <button class="btn-icon delete" onclick="deleteProduct('${product.id}')" title="Eliminar"><i class="ph ph-trash"></i></button>
                     </div>
                 </div>
             </div>
-        \`;
+        `;
         productsGrid.appendChild(card);
     });
 }
@@ -466,14 +466,14 @@ function updateStats() {
 
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = \`toast \${type}\`;
+    toast.className = `toast ${type}`;
     
     const icon = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
     
-    toast.innerHTML = \`
-        <i class="ph \${icon}" style="font-size: 1.5rem;"></i>
-        <span>\${message}</span>
-    \`;
+    toast.innerHTML = `
+        <i class="ph ${icon}" style="font-size: 1.5rem;"></i>
+        <span>${message}</span>
+    `;
     
     toastContainer.appendChild(toast);
     

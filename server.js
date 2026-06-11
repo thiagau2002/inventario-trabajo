@@ -95,5 +95,5 @@ app.delete('/api/products/:id', (req, res) => {
 
 // Iniciar servidor
 app.listen(PORT, () => {
-    console.log(\`Servidor en ejecución en http://localhost:\${PORT}\`);
+    console.log("Servidor en ejecución en el puerto " + PORT);
 });

@@ -293,16 +293,47 @@ async function handleFormSubmit(e) {
 }
 
 // Product Actions
-window.deleteProduct = async function(id) {
-    if(confirm('¿Estás seguro de que deseas eliminar este elemento?')) {
-        try {
-            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+window.deleteProduct = async function deleteProduct(id) {
+    if (!confirm('¿Estás seguro de eliminar este elemento?')) return;
+    
+    fetch(`${API_URL}/${id}`, { method: 'DELETE' })
+        .then(() => {
+            loadData();
             showToast('Elemento eliminado', 'success');
-            await loadData();
-        } catch (err) {
-            showToast('Error al eliminar', 'error');
-        }
-    }
+        })
+        .catch(err => showToast('Error al eliminar', 'error'));
+}
+
+// Zoom Controls
+const zoomSlider = document.getElementById('zoom-slider');
+const btnZoomIn = document.getElementById('btn-zoom-in');
+const btnZoomOut = document.getElementById('btn-zoom-out');
+
+function updateZoom(value) {
+    document.documentElement.style.setProperty('--grid-card-size', `${value}px`);
+    localStorage.setItem('inventory-zoom', value);
+}
+
+if (zoomSlider && btnZoomIn && btnZoomOut) {
+    const savedZoom = localStorage.getItem('inventory-zoom') || '280';
+    zoomSlider.value = savedZoom;
+    updateZoom(savedZoom);
+
+    zoomSlider.addEventListener('input', (e) => updateZoom(e.target.value));
+    
+    btnZoomIn.addEventListener('click', () => {
+        let val = parseInt(zoomSlider.value) + 20;
+        if (val > 350) val = 350;
+        zoomSlider.value = val;
+        updateZoom(val);
+    });
+    
+    btnZoomOut.addEventListener('click', () => {
+        let val = parseInt(zoomSlider.value) - 20;
+        if (val < 150) val = 150;
+        zoomSlider.value = val;
+        updateZoom(val);
+    });
 }
 
 window.editProduct = function(id) {

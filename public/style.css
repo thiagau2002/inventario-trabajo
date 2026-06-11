@@ -11,6 +11,7 @@
     --success: #10b981;
     --warning: #f59e0b;
     --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    --grid-card-size: 280px;
 }
 
 * {
@@ -279,7 +280,7 @@ button {
 
 .products-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(var(--grid-card-size), 1fr));
     gap: 1.5rem;
     padding-bottom: 2rem;
 }

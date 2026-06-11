@@ -46,14 +46,14 @@ db.serialize(() => {
         name TEXT NOT NULL UNIQUE
     )`);
     
-    db.get("SELECT COUNT(*) as count FROM categories", (err, row) => {
-        if (!err && row.count === 0) {
-            const defaults = ['Laptop', 'Monitor', 'Periférico', 'Cable / Adaptador', 'Otro'];
-            const stmt = db.prepare("INSERT INTO categories (name) VALUES (?)");
-            defaults.forEach(c => stmt.run(c));
-            stmt.finalize();
-        }
-    });
+    const defaultCategories = [
+        'Laptops', 'Monitores', 'Periféricos', 'Cables y Adaptadores', 
+        'Redes / Switches', 'Servidores', 'Cámaras', 'Herramientas', 
+        'Audio', 'Impresoras', 'Teléfonos / Celulares', 'Componentes PC', 'Otro'
+    ];
+    const stmt = db.prepare("INSERT OR IGNORE INTO categories (name) VALUES (?)");
+    defaultCategories.forEach(c => stmt.run(c));
+    stmt.finalize();
 });
 
 // --- Rutas API REST ---

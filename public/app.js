@@ -108,13 +108,22 @@ function setupEventListeners() {
 // Data Management
 async function loadData() {
     try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Error al conectar con el servidor');
-        products = await response.json();
-        updateCategories();
+        const [productsRes, categoriesRes] = await Promise.all([
+            fetch(API_URL),
+            fetch('/api/categories')
+        ]);
+        if (!productsRes.ok || !categoriesRes.ok) throw new Error('Error al conectar con el servidor');
+        products = await productsRes.json();
+        const apiCategories = await categoriesRes.json();
+        
+        // Merge API categories with any new categories in products
+        const catNames = apiCategories.map(c => c.name);
+        products.forEach(p => { if (p.category) catNames.push(p.category); });
+        categories = new Set(catNames);
+        
+        updateCategoriesUI();
         renderProducts();
         updateStats();
-        // Hide storage progress logic since we use a backend now
         document.querySelector('.storage-info').style.display = 'none';
     } catch (err) {
         showToast('Error cargando datos: ' + err.message, 'error');
@@ -122,9 +131,7 @@ async function loadData() {
     }
 }
 
-function updateCategories() {
-    categories = new Set(products.map(p => p.category));
-    
+function updateCategoriesUI() {
     // Update Datalist
     categoryList.innerHTML = '';
     categories.forEach(cat => {

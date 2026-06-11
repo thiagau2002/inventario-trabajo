@@ -40,33 +40,41 @@ db.serialize(() => {
         desc TEXT,
         image TEXT
     )`);
+    
+    db.run(`CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE
+    )`);
+    
+    db.get("SELECT COUNT(*) as count FROM categories", (err, row) => {
+        if (!err && row.count === 0) {
+            const defaults = ['Laptop', 'Monitor', 'Periférico', 'Cable / Adaptador', 'Otro'];
+            const stmt = db.prepare("INSERT INTO categories (name) VALUES (?)");
+            defaults.forEach(c => stmt.run(c));
+            stmt.finalize();
+        }
+    });
 });
 
 // --- Rutas API REST ---
 
-// Buscar imágenes en internet
-app.get('/api/search-images', async (req, res) => {
-    const query = req.query.q;
-    if (!query) return res.status(400).json({ error: 'Query is required' });
+// Obtener categorías
+app.get('/api/categories', (req, res) => {
+    db.all("SELECT * FROM categories ORDER BY name", (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+// Crear categoría
+app.post('/api/categories', (req, res) => {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'Nombre es requerido' });
     
-    try {
-        const response = await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=15&prop=imageinfo&iiprop=url&format=json`);
-        const data = await response.json();
-        
-        if (!data.query || !data.query.pages) {
-            return res.json([]);
-        }
-        
-        const pages = data.query.pages;
-        const urls = Object.values(pages)
-            .map(p => p.imageinfo && p.imageinfo[0] ? p.imageinfo[0].url : null)
-            .filter(url => url && url.match(/\.(jpeg|jpg|gif|png)$/i));
-            
-        res.json(urls);
-    } catch (err) {
-        console.error('Image search error:', err);
-        res.status(500).json({ error: 'Failed to fetch images' });
-    }
+    db.run("INSERT INTO categories (name) VALUES (?)", [name], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id: this.lastID, name });
+    });
 });
 
 // Obtener todos los elementos

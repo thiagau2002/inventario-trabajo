@@ -43,27 +43,53 @@ function setupEventListeners() {
     btnCloseModal.addEventListener('click', closeModal);
     btnCancelModal.addEventListener('click', closeModal);
     
-    // Image Upload & Search
+    // Image Upload & Paste
     imagePreview.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', handleImageUpload);
-    btnSearchImage.addEventListener('click', () => {
-        const productName = document.getElementById('product-name').value.trim();
-        modalSearchInput.value = productName;
-        searchModal.style.display = 'flex';
-        if (productName) performInternetSearch(productName);
-    });
-    btnTriggerSearch.addEventListener('click', () => {
-        const query = modalSearchInput.value.trim();
-        if (query) performInternetSearch(query);
-    });
-    modalSearchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const query = modalSearchInput.value.trim();
-            if (query) performInternetSearch(query);
+    
+    // Paste Image Support
+    document.addEventListener('paste', (e) => {
+        if (!modalOverlay.classList.contains('active')) return;
+        
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const blob = item.getAsFile();
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const max_size = 800;
+                        if (width > height) {
+                            if (width > max_size) {
+                                height *= max_size / width;
+                                width = max_size;
+                            }
+                        } else {
+                            if (height > max_size) {
+                                width *= max_size / height;
+                                height = max_size;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        imgDataInput.value = dataUrl;
+                        imagePreview.style.backgroundImage = `url(${dataUrl})`;
+                        imagePreview.innerHTML = '';
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(blob);
+            }
         }
     });
-    btnCloseSearchModal.addEventListener('click', closeSearchModal);
 
     // Sidebar navigation
     document.getElementById('nav-dashboard').addEventListener('click', () => setNav('dashboard'));
@@ -213,64 +239,14 @@ function handleImageUpload(e) {
     reader.readAsDataURL(file);
 }
 
-async function performInternetSearch(query) {
-    searchResultsContainer.innerHTML = '';
-    searchLoading.style.display = 'block';
-    
-    try {
-        const response = await fetch(`/api/search-images?q=${encodeURIComponent(query)}`);
-        const urls = await response.json();
-        
-        searchLoading.style.display = 'none';
-        
-        if (!urls || urls.length === 0 || urls.error) {
-            searchResultsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No se encontraron imágenes. Intenta buscar con menos palabras o un nombre más general.</p>';
-            return;
-        }
-        
-        urls.forEach(url => {
-            const img = document.createElement('img');
-            img.src = url;
-            img.style.width = '100%';
-            img.style.height = '120px';
-            img.style.objectFit = 'cover';
-            img.style.borderRadius = '8px';
-            img.style.cursor = 'pointer';
-            img.style.border = '2px solid transparent';
-            img.style.transition = 'all 0.2s ease';
-            
-            img.onmouseover = () => img.style.border = '2px solid var(--accent)';
-            img.onmouseout = () => img.style.border = '2px solid transparent';
-            
-            img.addEventListener('click', () => {
-                imgDataInput.value = url;
-                imagePreview.style.backgroundImage = `url(${url})`;
-                imagePreview.innerHTML = '';
-                closeSearchModal();
-            });
-            
-            // Si la imagen falla al cargar, la ocultamos
-            img.onerror = () => img.style.display = 'none';
-            
-            searchResultsContainer.appendChild(img);
-        });
-        
-    } catch (err) {
-        searchLoading.style.display = 'none';
-        searchResultsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Error al buscar imágenes</p>';
-    }
-}
 
-function closeSearchModal() {
-    searchModal.style.display = 'none';
-}
 
 function resetImagePreview() {
     imgDataInput.value = '';
     imagePreview.style.backgroundImage = 'none';
     imagePreview.innerHTML = `
         <i class="ph ph-image" style="font-size: 2rem; margin-bottom: 5px;"></i>
-        <span style="font-size: 0.8rem; text-align: center;">Subir local</span>
+        <span style="font-size: 0.8rem; text-align: center;">Click para subir<br>o Ctrl+V para pegar</span>
     `;
 }
 

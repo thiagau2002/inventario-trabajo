@@ -97,11 +97,8 @@
                 <div class="form-group image-upload" style="align-items: center; justify-content: center;">
                     <div class="image-preview" id="image-preview" style="margin-bottom: 12px; width: 140px; height: 140px; border-radius: 50%;">
                         <i class="ph ph-image" style="font-size: 2rem; margin-bottom: 5px;"></i>
-                        <span style="font-size: 0.8rem; text-align: center;">Subir local</span>
+                        <span style="font-size: 0.8rem; text-align: center;">Click para subir<br>o Ctrl+V para pegar</span>
                     </div>
-                    <button type="button" class="btn-secondary" id="btn-search-image" style="display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);">
-                        <i class="ph ph-magnifying-glass"></i> Buscar imagen en Google
-                    </button>
                     <input type="file" id="product-image" accept="image/*" style="display: none;">
                     <input type="hidden" id="product-image-data">
                 </div>
@@ -170,25 +167,6 @@
                     <button type="submit" class="btn-primary">Guardar Elemento</button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Modal for Image Search -->
-    <div class="modal-overlay" id="image-search-modal" style="display: none; z-index: 2000;">
-        <div class="modal glass-panel" style="max-width: 600px; width: 90%;">
-            <div class="modal-header">
-                <h3>Buscar Imagen</h3>
-                <button type="button" class="btn-close" id="btn-close-search-modal"><i class="ph ph-x"></i></button>
-            </div>
-            <div style="padding: 0 10px; margin-bottom: 15px; display: flex; gap: 8px;">
-                <input type="text" id="modal-search-input" class="glass-input" placeholder="Ej: Monitor, Laptop..." style="flex: 1;">
-                <button type="button" class="btn-primary" id="btn-trigger-search"><i class="ph ph-magnifying-glass"></i></button>
-            </div>
-            <div class="image-search-results" id="image-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; padding: 10px;">
-            </div>
-            <div style="text-align: center; margin-top: 10px; display: none;" id="image-search-loading">
-                <p>Buscando en internet...</p>
-            </div>
         </div>
     </div>
 

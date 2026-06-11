@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario de Trabajo</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar glass-panel">
+            <div class="logo">
+                <i class="ph ph-archive-box logo-icon"></i>
+                <h2>Inventario</h2>
+            </div>
+            <ul class="nav-links">
+                <li class="active"><i class="ph ph-squares-four"></i> Dashboard</li>
+                <li><i class="ph ph-package"></i> Elementos</li>
+                <li><i class="ph ph-wrench"></i> Reparaciones</li>
+                <li><i class="ph ph-users"></i> Asignaciones</li>
+            </ul>
+            <div class="storage-info">
+                <p>Almacenamiento Local</p>
+                <div class="progress-bar"><div class="progress" id="storage-progress"></div></div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="search-bar glass-panel">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" id="search-input" placeholder="Buscar por nombre, categoría o asignado...">
+                </div>
+                <div class="header-actions">
+                    <button class="btn-primary" id="btn-add-product">
+                        <i class="ph ph-plus-circle"></i> Nuevo Elemento
+                    </button>
+                </div>
+            </header>
+
+            <div class="dashboard-stats">
+                <div class="stat-card glass-panel">
+                    <div class="stat-icon blue"><i class="ph ph-package"></i></div>
+                    <div class="stat-details">
+                        <h3>Total Elementos</h3>
+                        <p id="stat-total-products">0</p>
+                    </div>
+                </div>
+                <div class="stat-card glass-panel">
+                    <div class="stat-icon green"><i class="ph ph-wrench"></i></div>
+                    <div class="stat-details">
+                        <h3>Para Reparar</h3>
+                        <p id="stat-repair">0</p>
+                    </div>
+                </div>
+                <div class="stat-card glass-panel">
+                    <div class="stat-icon red"><i class="ph ph-warning-circle"></i></div>
+                    <div class="stat-details">
+                        <h3>Stock Bajo</h3>
+                        <p id="stat-low-stock">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="products-header">
+                <h2>Materiales y Equipos</h2>
+                <div class="filters">
+                    <select id="category-filter" class="glass-select">
+                        <option value="all">Todas las categorías</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="products-grid" id="products-grid">
+                <!-- Product cards generated here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for Add/Edit Product -->
+    <div class="modal-overlay" id="product-modal">
+        <div class="modal glass-panel">
+            <div class="modal-header">
+                <h3 id="modal-title">Añadir Elemento</h3>
+                <button class="btn-close" id="btn-close-modal"><i class="ph ph-x"></i></button>
+            </div>
+            <form id="product-form">
+                <input type="hidden" id="product-id">
+                
+                <div class="form-group image-upload">
+                    <div class="image-preview" id="image-preview">
+                        <i class="ph ph-image"></i>
+                        <span>Click para subir foto</span>
+                    </div>
+                    <input type="file" id="product-image" accept="image/*" style="display: none;">
+                    <input type="hidden" id="product-image-data">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="product-name">Nombre del Elemento</label>
+                        <input type="text" id="product-name" required placeholder="Ej: Monitor 24 pulgadas">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-category">Categoría</label>
+                        <input type="text" id="product-category" required placeholder="Ej: Equipos IT" list="category-list">
+                        <datalist id="category-list"></datalist>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="product-brand">Marca / Modelo</label>
+                        <input type="text" id="product-brand" placeholder="Ej: Dell Ultrasharp">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-serial">Nº de Serie</label>
+                        <input type="text" id="product-serial" placeholder="Ej: SN-987654321">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="product-location">Ubicación</label>
+                        <input type="text" id="product-location" required placeholder="Ej: Armario 2, Oficina 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-condition">Estado</label>
+                        <select id="product-condition" class="glass-input">
+                            <option value="Nuevo">Nuevo</option>
+                            <option value="Buen estado">Buen estado</option>
+                            <option value="Regular">Regular</option>
+                            <option value="Para reparar">Para reparar / Roto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="product-quantity">Cantidad</label>
+                        <input type="number" id="product-quantity" min="0" required placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-min-stock">Stock Mínimo</label>
+                        <input type="number" id="product-min-stock" min="0" required placeholder="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-assigned">Asignado a (Opcional)</label>
+                        <input type="text" id="product-assigned" placeholder="Nombre de la persona">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="product-desc">Observaciones / Descripción</label>
+                    <textarea id="product-desc" rows="2" placeholder="Detalles extra..."></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-modal">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Elemento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

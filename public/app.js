@@ -780,7 +780,7 @@ function renderProducts() {
         
         // Navigation Filters
         if (currentNavView === 'items') {
-            if (donatedCount === p.quantity && p.quantity > 0) return false;
+            if ((donatedCount + getRepairCount(p)) >= p.quantity && p.quantity > 0) return false;
         } else if (currentNavView === 'repairs') {
             if (getRepairCount(p) === 0) return false;
         } else if (currentNavView === 'assignments') {
@@ -847,15 +847,16 @@ function renderProducts() {
         
         const repairs = getRepairCount(product);
         const donated = getDonatedCount(product);
-        const displayQty = (currentNavView === 'items') ? Math.max(0, product.quantity - donated) : product.quantity;
+        const displayQty = (currentNavView === 'items') ? Math.max(0, product.quantity - donated - repairs) : product.quantity;
         
-        if (repairs > 0) {
+        // Adjust status text and class for items view based on new displayQty
+        if (displayQty === 0 && currentNavView === 'items') {
+            statusClass = 'status-out-stock';
+            statusText = 'Agotado';
+        } else if (repairs > 0 && currentNavView !== 'items') {
             statusClass = 'status-out-stock';
             statusText = repairs === product.quantity ? 'En Reparación' : `Reparando (${repairs})`;
             customBadgeStyle = 'background: rgba(239, 68, 68, 0.8);';
-        } else if (displayQty === 0 && currentNavView === 'items') {
-            statusClass = 'status-out-stock';
-            statusText = 'Agotado';
         } else if (displayQty <= product.minStock) {
             statusClass = 'status-low-stock';
             statusText = 'Stock Bajo';

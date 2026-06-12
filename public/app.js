@@ -66,6 +66,16 @@ function setupEventListeners() {
 
     document.getElementById('btn-export-excel').addEventListener('click', exportToExcel);
 
+    // View Modes
+    document.getElementById('view-mode-grid').addEventListener('click', () => setViewMode('grid'));
+    document.getElementById('view-mode-list').addEventListener('click', () => setViewMode('list'));
+
+    // Units Modal
+    document.getElementById('btn-close-units').addEventListener('click', () => {
+        document.getElementById('units-modal').classList.remove('active');
+    });
+    document.getElementById('btn-save-units').addEventListener('click', saveUnits);
+
     btnAddProduct.addEventListener('click', openAddModal);
     btnCloseModal.addEventListener('click', closeModal);
     btnCancelModal.addEventListener('click', closeModal);
@@ -458,14 +468,111 @@ function updateStockBadge(product) {
 
 // Rendering
 let currentNavView = 'dashboard';
+let currentViewMode = localStorage.getItem('viewMode') || 'grid';
+let activeUnitsProductId = null;
 
 function setNav(view) {
     currentNavView = view;
-    // Update active class
     document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
     document.getElementById(`nav-${view}`).classList.add('active');
-    
     renderProducts();
+}
+
+function setViewMode(mode) {
+    currentViewMode = mode;
+    localStorage.setItem('viewMode', mode);
+    document.getElementById('view-mode-grid').classList.toggle('active', mode === 'grid');
+    document.getElementById('view-mode-list').classList.toggle('active', mode === 'list');
+    renderProducts();
+}
+
+window.openUnitsModal = function(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    activeUnitsProductId = id;
+    
+    let units = [];
+    try {
+        units = JSON.parse(product.units || '[]');
+    } catch(e) { units = []; }
+    
+    const container = document.getElementById('units-list');
+    container.innerHTML = '';
+    
+    // Ensure array has exactly product.quantity elements
+    if (!Array.isArray(units)) units = [];
+    while (units.length < product.quantity) {
+        units.push({ id: units.length + 1, condition: product.condition || 'Buen estado', serial: '' });
+    }
+    if (units.length > product.quantity) {
+        units = units.slice(0, product.quantity);
+    }
+    
+    units.forEach((u, i) => {
+        const div = document.createElement('div');
+        div.className = 'unit-item';
+        div.innerHTML = `
+            <div style="display:flex; flex-direction:column; gap:5px; flex-grow:1;">
+                <strong style="font-size: 0.9rem;">Unidad #${i + 1}</strong>
+                <input type="text" class="glass-input unit-serial" placeholder="Nº de Serie individual (Opcional)" value="${u.serial || ''}" style="width: 90%; font-size: 0.8rem; padding: 4px 8px;">
+            </div>
+            <div>
+                <select class="glass-select unit-condition" style="font-size: 0.85rem;">
+                    <option value="Nuevo" ${u.condition==='Nuevo'?'selected':''}>Nuevo</option>
+                    <option value="Buen estado" ${u.condition==='Buen estado'?'selected':''}>Buen estado</option>
+                    <option value="Usado" ${u.condition==='Usado'?'selected':''}>Usado</option>
+                    <option value="Para reparar" ${u.condition==='Para reparar'?'selected':''}>Para reparar</option>
+                    <option value="Dañado" ${u.condition==='Dañado'?'selected':''}>Dañado</option>
+                    <option value="Perdido" ${u.condition==='Perdido'?'selected':''}>Perdido</option>
+                </select>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+    
+    document.getElementById('units-modal').classList.add('active');
+}
+
+async function saveUnits() {
+    const product = products.find(p => p.id === activeUnitsProductId);
+    if (!product) return;
+    
+    const container = document.getElementById('units-list');
+    const items = container.querySelectorAll('.unit-item');
+    let newUnits = [];
+    let needsRepair = 0;
+    
+    items.forEach((item, index) => {
+        const condition = item.querySelector('.unit-condition').value;
+        const serial = item.querySelector('.unit-serial').value;
+        if (condition === 'Para reparar') needsRepair++;
+        newUnits.push({ id: index + 1, condition, serial });
+    });
+    
+    product.units = JSON.stringify(newUnits);
+    
+    // Automatically update the main condition if all are identical or if some need repair
+    if (needsRepair > 0) {
+        if (needsRepair === product.quantity) product.condition = 'Para reparar';
+        else product.condition = 'Atención (Variado)'; // Or we keep the main one
+    } else {
+        const allSame = newUnits.every(u => u.condition === newUnits[0].condition);
+        if (allSame && newUnits.length > 0) product.condition = newUnits[0].condition;
+    }
+    
+    try {
+        await fetch(`${API_URL}/${product.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(product)
+        });
+        showToast('Unidades guardadas', 'success');
+        document.getElementById('units-modal').classList.remove('active');
+        renderProducts();
+        updateStats();
+    } catch(err) {
+        showToast('Error al guardar unidades', 'error');
+    }
 }
 
 function renderProducts() {
@@ -493,6 +600,7 @@ function renderProducts() {
     });
 
     productsGrid.innerHTML = '';
+    productsGrid.className = currentViewMode === 'list' ? 'products-list' : 'products-grid';
 
     if (filtered.length === 0) {
         productsGrid.innerHTML = `
@@ -525,40 +633,73 @@ function renderProducts() {
             ? `<img src="${product.image}" alt="${product.name}" class="product-img">`
             : `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.2);"><i class="ph ph-image" style="font-size:3rem;"></i></div>`;
 
+        const unitsBtnHtml = product.quantity > 1 ? `<button class="btn-icon" onclick="openUnitsModal('${product.id}')" title="Gestionar Unidades (${product.quantity})"><i class="ph ph-stack"></i></button>` : '';
+
         const card = document.createElement('div');
-        card.className = 'product-card glass-panel';
-        card.innerHTML = `
-            <div class="product-img-wrapper">
-                <span class="status-badge ${statusClass}" id="badge-${product.id}" style="${customBadgeStyle}">${statusText}</span>
-                ${imgHtml}
-            </div>
-            <div class="product-info">
-                <span class="product-category">${product.category}</span>
-                <h3 class="product-name" title="${product.name}" style="margin-bottom: 0.2rem;">${product.name}</h3>
-                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    ${product.brand ? `<span>${product.brand}</span>` : ''} 
-                    ${product.serial ? `<span style="margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--glass-border);"><i class="ph ph-barcode" style="vertical-align: middle;"></i> ${product.serial}</span>` : ''}
+        if (currentViewMode === 'list') {
+            card.className = 'product-list-item';
+            card.innerHTML = `
+                <div class="product-img-wrapper" style="position:relative;">
+                    ${imgHtml}
                 </div>
-                
-                <div class="item-details-grid">
-                    <div title="Ubicación"><i class="ph ph-map-pin"></i> ${product.location || 'Sin ubicación'}</div>
-                    <div title="Estado"><i class="ph ph-activity"></i> ${product.condition || 'N/A'}</div>
-                    ${product.assigned ? `<div class="assigned-row" title="Asignado a"><i class="ph ph-user"></i> ${product.assigned}</div>` : ''}
+                <div class="product-list-info">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 class="product-name" style="margin:0;">${product.name}</h3>
+                        <span class="status-badge ${statusClass}" style="position:static; padding: 2px 8px; ${customBadgeStyle}">${statusText}</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                        <span style="color:var(--primary); font-weight:600;">${product.category}</span>
+                        ${product.brand ? ` | ${product.brand}` : ''}
+                        ${product.assigned ? ` | Asignado a: ${product.assigned}` : ''}
+                    </div>
                 </div>
-                
-                <div class="product-controls">
-                    <div class="qty-control">
+                <div class="product-list-controls">
+                    <div class="qty-control" style="margin:0;">
                         <button class="qty-btn" onclick="changeQuantity('${product.id}', -1)"><i class="ph ph-minus"></i></button>
                         <span class="qty-display" id="qty-${product.id}">${product.quantity}</span>
                         <button class="qty-btn" onclick="changeQuantity('${product.id}', 1)"><i class="ph ph-plus"></i></button>
                     </div>
-                    <div class="card-actions">
-                        <button class="btn-icon" onclick="editProduct('${product.id}')" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-                        <button class="btn-icon delete" onclick="deleteProduct('${product.id}')" title="Eliminar"><i class="ph ph-trash"></i></button>
+                    ${unitsBtnHtml}
+                    <button class="btn-icon" onclick="editProduct('${product.id}')" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                    <button class="btn-icon delete" onclick="deleteProduct('${product.id}')" title="Eliminar"><i class="ph ph-trash"></i></button>
+                </div>
+            `;
+        } else {
+            card.className = 'product-card glass-panel';
+            card.innerHTML = `
+                <div class="product-img-wrapper">
+                    <span class="status-badge ${statusClass}" id="badge-${product.id}" style="${customBadgeStyle}">${statusText}</span>
+                    ${imgHtml}
+                </div>
+                <div class="product-info">
+                    <span class="product-category">${product.category}</span>
+                    <h3 class="product-name" title="${product.name}" style="margin-bottom: 0.2rem;">${product.name}</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${product.brand ? `<span>${product.brand}</span>` : ''} 
+                        ${product.serial ? `<span style="margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--glass-border);"><i class="ph ph-barcode" style="vertical-align: middle;"></i> ${product.serial}</span>` : ''}
+                    </div>
+                    
+                    <div class="item-details-grid">
+                        <div title="Ubicación"><i class="ph ph-map-pin"></i> ${product.location || 'Sin ubicación'}</div>
+                        <div title="Estado"><i class="ph ph-activity"></i> ${product.condition || 'N/A'}</div>
+                        ${product.assigned ? `<div class="assigned-row" title="Asignado a"><i class="ph ph-user"></i> ${product.assigned}</div>` : ''}
+                    </div>
+                    
+                    <div class="product-controls">
+                        <div class="qty-control">
+                            <button class="qty-btn" onclick="changeQuantity('${product.id}', -1)"><i class="ph ph-minus"></i></button>
+                            <span class="qty-display" id="qty-${product.id}">${product.quantity}</span>
+                            <button class="qty-btn" onclick="changeQuantity('${product.id}', 1)"><i class="ph ph-plus"></i></button>
+                        </div>
+                        <div class="card-actions">
+                            ${unitsBtnHtml}
+                            <button class="btn-icon" onclick="editProduct('${product.id}')" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                            <button class="btn-icon delete" onclick="deleteProduct('${product.id}')" title="Eliminar"><i class="ph ph-trash"></i></button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
         productsGrid.appendChild(card);
     });
 }

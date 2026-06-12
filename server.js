@@ -41,6 +41,10 @@ db.serialize(() => {
         image TEXT
     )`);
     
+    db.run(`ALTER TABLE products ADD COLUMN units TEXT`, (err) => {
+        // Ignorar error si la columna ya existe
+    });
+    
     db.run(`CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE
@@ -90,10 +94,10 @@ app.get('/api/products', (req, res) => {
 
 // Añadir un elemento
 app.post('/api/products', (req, res) => {
-    const { id, name, category, brand, serial, location, condition, quantity, minStock, assigned, desc, image } = req.body;
-    db.run(`INSERT INTO products (id, name, category, brand, serial, location, condition, quantity, minStock, assigned, desc, image) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, name, category, brand, serial, location, condition, quantity, minStock, assigned, desc, image],
+    const { id, name, category, brand, serial, location, condition, quantity, minStock, assigned, desc, image, units } = req.body;
+    db.run(`INSERT INTO products (id, name, category, brand, serial, location, condition, quantity, minStock, assigned, desc, image, units) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, name, category, brand, serial, location, condition, quantity, minStock, assigned, desc, image, units || '[]'],
         function (err) {
             if (err) {
                 res.status(400).json({ error: err.message });
@@ -105,12 +109,12 @@ app.post('/api/products', (req, res) => {
 
 // Actualizar un elemento
 app.put('/api/products/:id', (req, res) => {
-    const { name, category, brand, serial, location, condition, quantity, minStock, assigned, desc, image } = req.body;
+    const { name, category, brand, serial, location, condition, quantity, minStock, assigned, desc, image, units } = req.body;
     db.run(`UPDATE products SET 
             name = ?, category = ?, brand = ?, serial = ?, location = ?, condition = ?, 
-            quantity = ?, minStock = ?, assigned = ?, desc = ?, image = ? 
+            quantity = ?, minStock = ?, assigned = ?, desc = ?, image = ?, units = ? 
             WHERE id = ?`,
-        [name, category, brand, serial, location, condition, quantity, minStock, assigned, desc, image, req.params.id],
+        [name, category, brand, serial, location, condition, quantity, minStock, assigned, desc, image, units || '[]', req.params.id],
         function (err) {
             if (err) {
                 res.status(400).json({ error: err.message });

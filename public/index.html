@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -23,6 +24,7 @@
                 <li id="nav-items"><i class="ph ph-package"></i> Elementos</li>
                 <li id="nav-repairs"><i class="ph ph-wrench"></i> Reparaciones</li>
                 <li id="nav-assignments"><i class="ph ph-users"></i> Asignaciones</li>
+                <li id="nav-settings" style="margin-top: auto;"><i class="ph ph-gear"></i> Configuración</li>
             </ul>
             <div class="storage-info">
                 <p>Almacenamiento Local</p>
@@ -172,6 +174,43 @@
                     <button type="submit" class="btn-primary">Guardar Elemento</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal" style="z-index: 2000;">
+        <div class="modal glass-panel" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>Configuración</h3>
+                <button class="btn-close" id="btn-close-settings"><i class="ph ph-x"></i></button>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Tema de la Aplicación</label>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-moon" style="font-size: 1.2rem;" id="icon-moon"></i>
+                        <span>Modo Oscuro / Claro</span>
+                        <i class="ph ph-sun" style="font-size: 1.2rem; color: var(--text-muted);" id="icon-sun"></i>
+                    </div>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="theme-slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <hr style="border-color: var(--glass-border); margin: 25px 0;">
+            
+            <div class="form-group">
+                <label>Copias de Seguridad (Backup)</label>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;">
+                    Exporta todo tu inventario a un archivo Excel (.xlsx) para guardarlo en tu computadora. Puedes elegir la ubicación al descargarlo.
+                </p>
+                <button class="btn-primary" id="btn-export-excel" style="width: 100%; display: flex; justify-content: center; gap: 8px;">
+                    <i class="ph ph-file-xls" style="font-size: 1.2rem;"></i> Exportar a Excel
+                </button>
+            </div>
         </div>
     </div>
 

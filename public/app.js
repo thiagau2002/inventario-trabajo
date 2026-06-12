@@ -39,6 +39,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Setup Event Listeners
 function setupEventListeners() {
+    // Settings & Theme
+    const settingsModal = document.getElementById('settings-modal');
+    document.getElementById('nav-settings').addEventListener('click', () => {
+        settingsModal.classList.add('active');
+    });
+    document.getElementById('btn-close-settings').addEventListener('click', () => {
+        settingsModal.classList.remove('active');
+    });
+
+    const themeToggle = document.getElementById('theme-toggle');
+    const isLightMode = localStorage.getItem('lightMode') === 'true';
+    if (isLightMode) {
+        document.body.classList.add('light-mode');
+        themeToggle.checked = true;
+    }
+    themeToggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            document.body.classList.add('light-mode');
+            localStorage.setItem('lightMode', 'true');
+        } else {
+            document.body.classList.remove('light-mode');
+            localStorage.setItem('lightMode', 'false');
+        }
+    });
+
+    document.getElementById('btn-export-excel').addEventListener('click', exportToExcel);
+
     btnAddProduct.addEventListener('click', openAddModal);
     btnCloseModal.addEventListener('click', closeModal);
     btnCancelModal.addEventListener('click', closeModal);
@@ -150,6 +177,36 @@ function updateCategoriesUI() {
         categoryFilter.appendChild(option);
     });
     categoryFilter.value = categories.has(currentFilter) ? currentFilter : 'all';
+}
+
+function exportToExcel() {
+    if (products.length === 0) {
+        showToast('No hay datos para exportar', 'warning');
+        return;
+    }
+    
+    // Format data for Excel
+    const data = products.map(p => ({
+        'ID': p.id,
+        'Nombre': p.name,
+        'Categoría': p.category,
+        'Marca/Modelo': p.brand,
+        'Nº Serie': p.serial,
+        'Ubicación': p.location,
+        'Condición': p.condition,
+        'Cantidad': p.quantity,
+        'Asignado a': p.assigned,
+        'Descripción': p.desc
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+    
+    // Generate file and trigger download
+    const dateStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `Backup_Inventario_${dateStr}.xlsx`);
+    showToast('Exportación a Excel completada', 'success');
 }
 
 function generateId() {

@@ -601,3 +601,68 @@ button {
 .empty-state p {
     font-size: 1.1rem;
 }
+/* Light Mode Variables */
+body.light-mode {
+    --bg-color: #f8fafc;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .glass-select option {
+    background: #ffffff;
+    color: #0f172a;
+}
+body.light-mode .glass-input, body.light-mode .glass-select {
+    color: #0f172a;
+}
+body.light-mode .product-img-wrapper {
+    background: rgba(0,0,0,0.05);
+}
+body.light-mode .qty-control {
+    background: rgba(0,0,0,0.05);
+}
+
+/* Theme Switch */
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+.theme-switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.theme-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #4b5563;
+  transition: .4s;
+}
+.theme-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+input:checked + .theme-slider {
+  background-color: #6366f1;
+}
+input:checked + .theme-slider:before {
+  transform: translateX(24px);
+}
+.theme-slider.round {
+  border-radius: 34px;
+}
+.theme-slider.round:before {
+  border-radius: 50%;
+}

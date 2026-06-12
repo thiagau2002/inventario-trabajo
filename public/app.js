@@ -552,6 +552,7 @@ function renderDashboard() {
                 }]
             },
             options: {
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { labels: { color: textColor } }
                 }
@@ -575,6 +576,7 @@ function renderDashboard() {
                 }]
             },
             options: {
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false }
                 },

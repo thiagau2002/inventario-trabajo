@@ -159,7 +159,15 @@ async function loadData() {
         categories = new Set(catNames);
         
         updateCategoriesUI();
-        renderProducts();
+        if (currentNavView === 'dashboard') {
+            document.getElementById('products-view').style.display = 'none';
+            document.getElementById('dashboard-view').style.display = 'flex';
+            renderDashboard();
+        } else {
+            document.getElementById('products-view').style.display = 'block';
+            document.getElementById('dashboard-view').style.display = 'none';
+            renderProducts();
+        }
         updateStats();
         document.querySelector('.storage-info').style.display = 'none';
     } catch (err) {
@@ -487,7 +495,122 @@ function setNav(view) {
     currentNavView = view;
     document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
     document.getElementById(`nav-${view}`).classList.add('active');
-    renderProducts();
+    
+    if (view === 'dashboard') {
+        document.getElementById('products-view').style.display = 'none';
+        document.getElementById('dashboard-view').style.display = 'flex';
+        renderDashboard();
+    } else {
+        document.getElementById('products-view').style.display = 'block';
+        document.getElementById('dashboard-view').style.display = 'none';
+        renderProducts();
+    }
+}
+
+// Global chart variables to destroy before re-rendering
+let categoryChartInstance = null;
+let statusChartInstance = null;
+
+function renderDashboard() {
+    const categoryCounts = {};
+    const statusCounts = {};
+    
+    products.forEach(p => {
+        // Category count
+        categoryCounts[p.category] = (categoryCounts[p.category] || 0) + p.quantity;
+        
+        // Status count
+        let units = [];
+        try { units = JSON.parse(p.units || '[]'); } catch(e) {}
+        
+        if (units.length > 0) {
+            units.forEach(u => {
+                statusCounts[u.condition] = (statusCounts[u.condition] || 0) + 1;
+            });
+        } else {
+            statusCounts[p.condition] = (statusCounts[p.condition] || 0) + p.quantity;
+        }
+    });
+
+    const isLightMode = document.body.classList.contains('light-mode');
+    const textColor = isLightMode ? '#0f172a' : '#ffffff';
+
+    // 1. Render Category Chart (Pie)
+    const catCtx = document.getElementById('categoryChart');
+    if (catCtx) {
+        if (categoryChartInstance) categoryChartInstance.destroy();
+        categoryChartInstance = new Chart(catCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(categoryCounts),
+                datasets: [{
+                    data: Object.values(categoryCounts),
+                    backgroundColor: [
+                        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { labels: { color: textColor } }
+                }
+            }
+        });
+    }
+
+    // 2. Render Status Chart (Bar)
+    const statCtx = document.getElementById('statusChart');
+    if (statCtx) {
+        if (statusChartInstance) statusChartInstance.destroy();
+        statusChartInstance = new Chart(statCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(statusCounts),
+                datasets: [{
+                    label: 'Unidades',
+                    data: Object.values(statusCounts),
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { ticks: { color: textColor } },
+                    y: { ticks: { color: textColor }, beginAtZero: true }
+                }
+            }
+        });
+    }
+    
+    // 3. Render Category Blocks
+    const grid = document.getElementById('dashboard-categories-grid');
+    grid.innerHTML = '';
+    
+    Object.keys(categoryCounts).forEach(cat => {
+        const count = categoryCounts[cat];
+        const block = document.createElement('div');
+        block.className = 'glass-panel';
+        block.style.padding = '1.5rem';
+        block.style.cursor = 'pointer';
+        block.style.transition = 'transform 0.2s';
+        block.innerHTML = `
+            <div style="font-size: 2rem; color: var(--primary); margin-bottom: 10px;"><i class="ph ph-folder"></i></div>
+            <h4 style="margin: 0; font-size: 1.1rem;">${cat}</h4>
+            <p style="margin: 5px 0 0; color: var(--text-muted); font-size: 0.9rem;">${count} unidades</p>
+        `;
+        block.onmouseover = () => block.style.transform = 'translateY(-5px)';
+        block.onmouseout = () => block.style.transform = 'translateY(0)';
+        block.onclick = () => {
+            // Switch to items view and filter by this category
+            categoryFilter.value = cat;
+            setNav('items');
+        };
+        grid.appendChild(block);
+    });
 }
 
 function setViewMode(mode) {

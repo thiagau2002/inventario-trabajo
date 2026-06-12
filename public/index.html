@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -70,8 +71,28 @@
                 </div>
             </div>
 
-            <!-- Products Grid -->
-            <div class="products-header">
+            <!-- Dashboard View (New) -->
+            <div id="dashboard-view" style="display: none; flex-direction: column; gap: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="glass-panel" style="padding: 20px;">
+                        <h3 style="margin-bottom: 15px; color: var(--text-main);">Inventario por Categoría</h3>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="glass-panel" style="padding: 20px;">
+                        <h3 style="margin-bottom: 15px; color: var(--text-main);">Estado General</h3>
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 10px; color: var(--text-main);">Categorías</h3>
+                <div id="dashboard-categories-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                    <!-- Categories blocks generated here -->
+                </div>
+            </div>
+
+            <!-- Products View -->
+            <div id="products-view">
+                <div class="products-header">
                 <h2>Materiales y Equipos</h2>
                 <div class="filters" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                     <div class="view-modes" style="display: flex; gap: 5px; background: rgba(255, 255, 255, 0.05); padding: 5px; border-radius: 8px; border: 1px solid var(--glass-border);">
@@ -89,8 +110,9 @@
                 </div>
             </div>
 
-            <div class="products-grid" id="products-grid">
-                <!-- Product cards generated here -->
+                <div class="products-grid" id="products-grid">
+                    <!-- Product cards generated here -->
+                </div>
             </div>
         </main>
     </div>

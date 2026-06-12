@@ -898,6 +898,11 @@ function renderProducts() {
                <button class="qty-btn" onclick="changeQuantity('${product.id}', 1)"><i class="ph ph-plus"></i></button>`
             : `<span class="qty-display" style="padding: 0 10px; font-weight: bold;">${displayQty} uds.</span>`;
 
+        const editDeleteHtml = currentNavView === 'items'
+            ? `<button class="btn-icon" onclick="editProduct('${product.id}')" title="Editar Elemento Principal"><i class="ph ph-pencil-simple"></i></button>
+               <button class="btn-icon delete" onclick="deleteProduct('${product.id}')" title="Eliminar Elemento por Completo"><i class="ph ph-trash"></i></button>`
+            : '';
+
         const card = document.createElement('div');
         if (currentViewMode === 'list') {
             card.className = 'product-list-item';
@@ -921,8 +926,7 @@ function renderProducts() {
                         ${qtyControlsHtml}
                     </div>
                     ${unitsBtnHtml}
-                    <button class="btn-icon" onclick="editProduct('${product.id}')" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-                    <button class="btn-icon delete" onclick="deleteProduct('${product.id}')" title="Eliminar"><i class="ph ph-trash"></i></button>
+                    ${editDeleteHtml}
                 </div>
             `;
         } else {
@@ -952,8 +956,7 @@ function renderProducts() {
                     </div>
                         <div class="card-actions">
                             ${unitsBtnHtml}
-                            <button class="btn-icon" onclick="editProduct('${product.id}')" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-                            <button class="btn-icon delete" onclick="deleteProduct('${product.id}')" title="Eliminar"><i class="ph ph-trash"></i></button>
+                            ${editDeleteHtml}
                         </div>
                     </div>
                 </div>

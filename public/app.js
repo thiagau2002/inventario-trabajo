@@ -471,6 +471,18 @@ let currentNavView = 'dashboard';
 let currentViewMode = localStorage.getItem('viewMode') || 'grid';
 let activeUnitsProductId = null;
 
+function getRepairCount(p) {
+    if (p.condition === 'Para reparar') return p.quantity;
+    if (p.units && p.units !== '[]') {
+        try {
+            const unitsArr = JSON.parse(p.units);
+            const badUnits = unitsArr.filter(u => u.condition === 'Para reparar').length;
+            if (badUnits > 0) return badUnits;
+        } catch(e) {}
+    }
+    return p.condition === 'Atención (Variado)' ? 1 : 0;
+}
+
 function setNav(view) {
     currentNavView = view;
     document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
@@ -584,7 +596,7 @@ function renderProducts() {
         if (currentNavView === 'items') {
             // Show all (maybe hide repairs?)
         } else if (currentNavView === 'repairs') {
-            if (p.condition !== 'Para reparar') return false;
+            if (getRepairCount(p) === 0) return false;
         } else if (currentNavView === 'assignments') {
             if (!p.assigned || p.assigned.trim() === '') return false;
         }
@@ -617,9 +629,10 @@ function renderProducts() {
         let statusText = 'Disponible';
         let customBadgeStyle = '';
         
-        if (product.condition === 'Para reparar') {
+        const repairs = getRepairCount(product);
+        if (repairs > 0) {
             statusClass = 'status-out-stock';
-            statusText = 'En Reparación';
+            statusText = repairs === product.quantity ? 'En Reparación' : `Reparando (${repairs})`;
             customBadgeStyle = 'background: rgba(239, 68, 68, 0.8);';
         } else if (product.quantity === 0) {
             statusClass = 'status-out-stock';
@@ -706,7 +719,7 @@ function renderProducts() {
 
 function updateStats() {
     const totalProducts = products.reduce((sum, p) => sum + p.quantity, 0);
-    const repairing = products.filter(p => p.condition === 'Para reparar').length;
+    const repairing = products.reduce((sum, p) => sum + getRepairCount(p), 0);
     const lowStock = products.filter(p => p.quantity <= p.minStock && p.quantity > 0).length;
 
     document.getElementById('stat-total-products').textContent = totalProducts;

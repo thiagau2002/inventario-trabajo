@@ -847,7 +847,31 @@ function renderProducts() {
         
         const repairs = getRepairCount(product);
         const donated = getDonatedCount(product);
-        const displayQty = (currentNavView === 'items') ? Math.max(0, product.quantity - donated - repairs) : product.quantity;
+        
+        let displayQty = product.quantity;
+        if (currentNavView === 'items') {
+            displayQty = Math.max(0, product.quantity - donated - repairs);
+        } else if (currentNavView === 'repairs') {
+            displayQty = repairs;
+        } else if (currentNavView === 'assignments') {
+            let count = 0;
+            let units = [];
+            try { units = JSON.parse(product.units || '[]'); } catch(e) {}
+            if (filterAssign !== 'all') {
+                if (units.length > 0) {
+                    count = units.filter(u => u.assigned === filterAssign).length;
+                } else {
+                    count = (product.assigned === filterAssign) ? product.quantity : 0;
+                }
+            } else {
+                if (units.length > 0) {
+                    count = units.filter(u => u.assigned && u.assigned.trim() !== '').length;
+                } else {
+                    count = (product.assigned && product.assigned.trim() !== '') ? product.quantity : 0;
+                }
+            }
+            displayQty = count;
+        }
         
         // Adjust status text and class for items view based on new displayQty
         if (displayQty === 0 && currentNavView === 'items') {
@@ -867,6 +891,12 @@ function renderProducts() {
             : `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.2);"><i class="ph ph-image" style="font-size:3rem;"></i></div>`;
 
         const unitsBtnHtml = `<button class="btn-icon" onclick="openUnitsModal('${product.id}')" title="Gestionar / Asignar Unidades"><i class="ph ph-stack"></i></button>`;
+
+        const qtyControlsHtml = currentNavView === 'items' 
+            ? `<button class="qty-btn" onclick="changeQuantity('${product.id}', -1)"><i class="ph ph-minus"></i></button>
+               <span class="qty-display" id="qty-${product.id}">${displayQty}</span>
+               <button class="qty-btn" onclick="changeQuantity('${product.id}', 1)"><i class="ph ph-plus"></i></button>`
+            : `<span class="qty-display" style="padding: 0 10px; font-weight: bold;">${displayQty} uds.</span>`;
 
         const card = document.createElement('div');
         if (currentViewMode === 'list') {
@@ -888,9 +918,7 @@ function renderProducts() {
                 </div>
                 <div class="product-list-controls">
                     <div class="qty-control" style="margin:0;">
-                        <button class="qty-btn" onclick="changeQuantity('${product.id}', -1)"><i class="ph ph-minus"></i></button>
-                        <span class="qty-display" id="qty-${product.id}">${displayQty}</span>
-                        <button class="qty-btn" onclick="changeQuantity('${product.id}', 1)"><i class="ph ph-plus"></i></button>
+                        ${qtyControlsHtml}
                     </div>
                     ${unitsBtnHtml}
                     <button class="btn-icon" onclick="editProduct('${product.id}')" title="Editar"><i class="ph ph-pencil-simple"></i></button>
@@ -920,9 +948,7 @@ function renderProducts() {
                     
                     <div class="product-actions" style="margin-top: 1rem;">
                     <div class="qty-control">
-                        <button class="qty-btn" onclick="changeQuantity('${product.id}', -1)"><i class="ph ph-minus"></i></button>
-                        <span class="qty-display" id="qty-${product.id}">${displayQty}</span>
-                        <button class="qty-btn" onclick="changeQuantity('${product.id}', 1)"><i class="ph ph-plus"></i></button>
+                        ${qtyControlsHtml}
                     </div>
                         <div class="card-actions">
                             ${unitsBtnHtml}

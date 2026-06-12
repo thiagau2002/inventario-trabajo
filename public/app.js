@@ -10,6 +10,7 @@ const API_URL = '/api/products';
 const productsGrid = document.getElementById('products-grid');
 const searchInput = document.getElementById('search-input');
 const categoryFilter = document.getElementById('category-filter');
+const assignmentFilter = document.getElementById('assignment-filter');
 const modalOverlay = document.getElementById('product-modal');
 const productForm = document.getElementById('product-form');
 const btnAddProduct = document.getElementById('btn-add-product');
@@ -140,6 +141,7 @@ function setupEventListeners() {
     // Filters
     searchInput.addEventListener('input', renderProducts);
     categoryFilter.addEventListener('change', renderProducts);
+    assignmentFilter.addEventListener('change', renderProducts);
 }
 
 // Data Management
@@ -195,6 +197,28 @@ function updateCategoriesUI() {
         categoryFilter.appendChild(option);
     });
     categoryFilter.value = categories.has(currentFilter) ? currentFilter : 'all';
+    
+    // Update Assignments Filter
+    const currentAssignFilter = assignmentFilter.value;
+    assignmentFilter.innerHTML = '<option value="all">Todas las asignaciones</option>';
+    const assignments = new Set();
+    products.forEach(p => {
+        let units = [];
+        try { units = JSON.parse(p.units || '[]'); } catch(e) {}
+        if (units.length > 0) {
+            units.forEach(u => { if (u.assigned && u.assigned.trim() !== '') assignments.add(u.assigned.trim()); });
+        } else {
+            if (p.assigned && p.assigned.trim() !== '' && p.assigned !== 'Varias asignaciones') assignments.add(p.assigned.trim());
+        }
+    });
+    
+    [...assignments].sort().forEach(assign => {
+        const option = document.createElement('option');
+        option.value = assign;
+        option.textContent = assign;
+        assignmentFilter.appendChild(option);
+    });
+    assignmentFilter.value = assignments.has(currentAssignFilter) ? currentAssignFilter : 'all';
 }
 
 function exportToExcel() {
@@ -490,6 +514,17 @@ function getRepairCount(p) {
     return p.condition === 'Atención (Variado)' ? 1 : 0;
 }
 
+function getDonatedCount(p) {
+    if (p.assigned === 'Donación') return p.quantity;
+    if (p.units && p.units !== '[]') {
+        try {
+            const unitsArr = JSON.parse(p.units);
+            return unitsArr.filter(u => u.assigned === 'Donación').length;
+        } catch(e) {}
+    }
+    return 0;
+}
+
 function setNav(view) {
     currentNavView = view;
     document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
@@ -729,24 +764,66 @@ async function saveUnits() {
 function renderProducts() {
     const searchTerm = searchInput.value.toLowerCase();
     const filterCat = categoryFilter.value;
+    const filterAssign = assignmentFilter.value;
+    
+    // Show or hide the assignment filter dropdown based on the view
+    if (currentNavView === 'assignments') {
+        assignmentFilter.style.display = 'inline-block';
+        categoryFilter.style.display = 'none'; // Optional: hide category filter in assignments
+    } else {
+        assignmentFilter.style.display = 'none';
+        categoryFilter.style.display = 'inline-block';
+    }
     
     const filtered = products.filter(p => {
+        const donatedCount = getDonatedCount(p);
+        
         // Navigation Filters
         if (currentNavView === 'items') {
-            // Show all (maybe hide repairs?)
+            if (donatedCount === p.quantity && p.quantity > 0) return false;
         } else if (currentNavView === 'repairs') {
             if (getRepairCount(p) === 0) return false;
         } else if (currentNavView === 'assignments') {
-            if (!p.assigned || p.assigned.trim() === '') return false;
+            // Must have SOME assignment
+            let hasAssign = false;
+            let units = [];
+            try { units = JSON.parse(p.units || '[]'); } catch(e) {}
+            if (units.length > 0) {
+                hasAssign = units.some(u => u.assigned && u.assigned.trim() !== '');
+            } else {
+                hasAssign = !!(p.assigned && p.assigned.trim() !== '');
+            }
+            if (!hasAssign) return false;
+            
+            // Apply assignment dropdown filter
+            if (filterAssign !== 'all') {
+                if (units.length > 0) {
+                    if (!units.some(u => u.assigned === filterAssign)) return false;
+                } else {
+                    if (p.assigned !== filterAssign) return false;
+                }
+            }
         }
         
         // Search & Cat Filters
         const matchName = p.name.toLowerCase().includes(searchTerm);
         const matchCat = p.category.toLowerCase().includes(searchTerm);
         const matchAssigned = (p.assigned || '').toLowerCase().includes(searchTerm);
-        const matchesSearch = matchName || matchCat || matchAssigned;
         
+        let unitMatchAssign = false;
+        if (p.units && p.units !== '[]') {
+            try {
+                const unitsArr = JSON.parse(p.units);
+                unitMatchAssign = unitsArr.some(u => (u.assigned || '').toLowerCase().includes(searchTerm));
+            } catch(e) {}
+        }
+        
+        const matchesSearch = matchName || matchCat || matchAssigned || unitMatchAssign;
         const matchesCatFilter = filterCat === 'all' || p.category === filterCat;
+        
+        // If in assignments view, ignore category filter for now so they see all assignments easily
+        if (currentNavView === 'assignments') return matchesSearch;
+        
         return matchesSearch && matchesCatFilter;
     });
 
@@ -769,14 +846,17 @@ function renderProducts() {
         let customBadgeStyle = '';
         
         const repairs = getRepairCount(product);
+        const donated = getDonatedCount(product);
+        const displayQty = (currentNavView === 'items') ? Math.max(0, product.quantity - donated) : product.quantity;
+        
         if (repairs > 0) {
             statusClass = 'status-out-stock';
             statusText = repairs === product.quantity ? 'En Reparación' : `Reparando (${repairs})`;
             customBadgeStyle = 'background: rgba(239, 68, 68, 0.8);';
-        } else if (product.quantity === 0) {
+        } else if (displayQty === 0 && currentNavView === 'items') {
             statusClass = 'status-out-stock';
             statusText = 'Agotado';
-        } else if (product.quantity <= product.minStock) {
+        } else if (displayQty <= product.minStock) {
             statusClass = 'status-low-stock';
             statusText = 'Stock Bajo';
         }
@@ -808,7 +888,7 @@ function renderProducts() {
                 <div class="product-list-controls">
                     <div class="qty-control" style="margin:0;">
                         <button class="qty-btn" onclick="changeQuantity('${product.id}', -1)"><i class="ph ph-minus"></i></button>
-                        <span class="qty-display" id="qty-${product.id}">${product.quantity}</span>
+                        <span class="qty-display" id="qty-${product.id}">${displayQty}</span>
                         <button class="qty-btn" onclick="changeQuantity('${product.id}', 1)"><i class="ph ph-plus"></i></button>
                     </div>
                     ${unitsBtnHtml}
@@ -837,12 +917,12 @@ function renderProducts() {
                         ${product.assigned ? `<div class="assigned-row" title="Asignado a"><i class="ph ph-user"></i> ${product.assigned}</div>` : ''}
                     </div>
                     
-                    <div class="product-controls">
-                        <div class="qty-control">
-                            <button class="qty-btn" onclick="changeQuantity('${product.id}', -1)"><i class="ph ph-minus"></i></button>
-                            <span class="qty-display" id="qty-${product.id}">${product.quantity}</span>
-                            <button class="qty-btn" onclick="changeQuantity('${product.id}', 1)"><i class="ph ph-plus"></i></button>
-                        </div>
+                    <div class="product-actions" style="margin-top: 1rem;">
+                    <div class="qty-control">
+                        <button class="qty-btn" onclick="changeQuantity('${product.id}', -1)"><i class="ph ph-minus"></i></button>
+                        <span class="qty-display" id="qty-${product.id}">${displayQty}</span>
+                        <button class="qty-btn" onclick="changeQuantity('${product.id}', 1)"><i class="ph ph-plus"></i></button>
+                    </div>
                         <div class="card-actions">
                             ${unitsBtnHtml}
                             <button class="btn-icon" onclick="editProduct('${product.id}')" title="Editar"><i class="ph ph-pencil-simple"></i></button>

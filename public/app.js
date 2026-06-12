@@ -256,7 +256,6 @@ function openEditModal(id) {
     document.getElementById('product-condition').value = product.condition || 'Buen estado';
     document.getElementById('product-quantity').value = product.quantity;
     document.getElementById('product-min-stock').value = product.minStock;
-    document.getElementById('product-assigned').value = product.assigned || '';
     document.getElementById('product-desc').value = product.desc || '';
     
     if (product.image) {
@@ -344,10 +343,10 @@ async function handleFormSubmit(e) {
         location: document.getElementById('product-location').value,
         condition: document.getElementById('product-condition').value,
         quantity: parseInt(document.getElementById('product-quantity').value),
-        minStock: parseInt(document.getElementById('product-min-stock').value),
-        assigned: document.getElementById('product-assigned').value,
+        minStock: parseInt(document.getElementById('product-min-stock').value) || 0,
         desc: document.getElementById('product-desc').value,
-        image: imgDataInput.value
+        image: imgDataInput.value,
+        units: '[]'
     };
 
     try {
@@ -639,7 +638,7 @@ window.openUnitsModal = function(id) {
     // Ensure array has exactly product.quantity elements
     if (!Array.isArray(units)) units = [];
     while (units.length < product.quantity) {
-        units.push({ id: units.length + 1, condition: product.condition || 'Buen estado', serial: '' });
+        units.push({ id: units.length + 1, condition: product.condition || 'Buen estado', serial: '', assigned: '' });
     }
     if (units.length > product.quantity) {
         units = units.slice(0, product.quantity);
@@ -651,9 +650,13 @@ window.openUnitsModal = function(id) {
         div.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:5px; flex-grow:1;">
                 <strong style="font-size: 0.9rem;">Unidad #${i + 1}</strong>
-                <input type="text" class="glass-input unit-serial" placeholder="Nº de Serie individual (Opcional)" value="${u.serial || ''}" style="width: 90%; font-size: 0.8rem; padding: 4px 8px;">
+                <input type="text" class="glass-input unit-serial" placeholder="Nº de Serie individual" value="${u.serial || ''}" style="font-size: 0.8rem; padding: 4px 8px;">
+                <div style="display:flex; gap: 5px; align-items:center;">
+                    <input type="text" class="glass-input unit-assigned" placeholder="Asignado a" value="${u.assigned || ''}" style="font-size: 0.8rem; padding: 4px 8px; flex-grow:1;">
+                    <button class="btn-icon" title="Asignar Rápido a Donación" onclick="this.previousElementSibling.value='Donación'" style="background: rgba(236, 72, 153, 0.2); color: #ec4899; padding: 4px 6px; border-radius: 4px;"><i class="ph ph-gift"></i></button>
+                </div>
             </div>
-            <div>
+            <div style="display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
                 <select class="glass-select unit-condition" style="font-size: 0.85rem;">
                     <option value="Nuevo" ${u.condition==='Nuevo'?'selected':''}>Nuevo</option>
                     <option value="Buen estado" ${u.condition==='Buen estado'?'selected':''}>Buen estado</option>
@@ -682,8 +685,9 @@ async function saveUnits() {
     items.forEach((item, index) => {
         const condition = item.querySelector('.unit-condition').value;
         const serial = item.querySelector('.unit-serial').value;
+        const assigned = item.querySelector('.unit-assigned').value.trim();
         if (condition === 'Para reparar') needsRepair++;
-        newUnits.push({ id: index + 1, condition, serial });
+        newUnits.push({ id: index + 1, condition, serial, assigned });
     });
     
     product.units = JSON.stringify(newUnits);
@@ -695,6 +699,16 @@ async function saveUnits() {
     } else {
         const allSame = newUnits.every(u => u.condition === newUnits[0].condition);
         if (allSame && newUnits.length > 0) product.condition = newUnits[0].condition;
+    }
+    
+    // Automatically update the main 'assigned' field
+    const uniqueAssignments = [...new Set(newUnits.map(u => u.assigned).filter(a => a !== ''))];
+    if (uniqueAssignments.length === 0) {
+        product.assigned = '';
+    } else if (uniqueAssignments.length === 1) {
+        product.assigned = uniqueAssignments[0];
+    } else {
+        product.assigned = 'Varias asignaciones';
     }
     
     try {
@@ -771,7 +785,7 @@ function renderProducts() {
             ? `<img src="${product.image}" alt="${product.name}" class="product-img">`
             : `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.2);"><i class="ph ph-image" style="font-size:3rem;"></i></div>`;
 
-        const unitsBtnHtml = product.quantity > 1 ? `<button class="btn-icon" onclick="openUnitsModal('${product.id}')" title="Gestionar Unidades (${product.quantity})"><i class="ph ph-stack"></i></button>` : '';
+        const unitsBtnHtml = `<button class="btn-icon" onclick="openUnitsModal('${product.id}')" title="Gestionar / Asignar Unidades"><i class="ph ph-stack"></i></button>`;
 
         const card = document.createElement('div');
         if (currentViewMode === 'list') {

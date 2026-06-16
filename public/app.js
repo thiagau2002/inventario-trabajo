@@ -11,6 +11,7 @@ const productsGrid = document.getElementById('products-grid');
 const searchInput = document.getElementById('search-input');
 const categoryFilter = document.getElementById('category-filter');
 const assignmentFilter = document.getElementById('assignment-filter');
+const locationFilter = document.getElementById('location-filter');
 const modalOverlay = document.getElementById('product-modal');
 const productForm = document.getElementById('product-form');
 const btnAddProduct = document.getElementById('btn-add-product');
@@ -142,6 +143,7 @@ function setupEventListeners() {
     searchInput.addEventListener('input', renderProducts);
     categoryFilter.addEventListener('change', renderProducts);
     assignmentFilter.addEventListener('change', renderProducts);
+    locationFilter.addEventListener('change', renderProducts);
 }
 
 // Data Management
@@ -219,6 +221,22 @@ function updateCategoriesUI() {
         assignmentFilter.appendChild(option);
     });
     assignmentFilter.value = assignments.has(currentAssignFilter) ? currentAssignFilter : 'all';
+
+    // Update Location Filter
+    const currentLocationFilter = locationFilter.value;
+    locationFilter.innerHTML = '<option value="all">Todas las ubicaciones</option>';
+    const locations = new Set();
+    products.forEach(p => {
+        if (p.location && p.location.trim() !== '') locations.add(p.location.trim());
+    });
+    
+    [...locations].sort().forEach(loc => {
+        const option = document.createElement('option');
+        option.value = loc;
+        option.textContent = loc;
+        locationFilter.appendChild(option);
+    });
+    locationFilter.value = locations.has(currentLocationFilter) ? currentLocationFilter : 'all';
 }
 
 function exportToExcel() {
@@ -765,14 +783,17 @@ function renderProducts() {
     const searchTerm = searchInput.value.toLowerCase();
     const filterCat = categoryFilter.value;
     const filterAssign = assignmentFilter.value;
+    const filterLoc = locationFilter.value;
     
     // Show or hide the assignment filter dropdown based on the view
     if (currentNavView === 'assignments') {
         assignmentFilter.style.display = 'inline-block';
         categoryFilter.style.display = 'none'; // Optional: hide category filter in assignments
+        locationFilter.style.display = 'inline-block';
     } else {
         assignmentFilter.style.display = 'none';
         categoryFilter.style.display = 'inline-block';
+        locationFilter.style.display = 'inline-block';
     }
     
     const filtered = products.filter(p => {
@@ -820,11 +841,12 @@ function renderProducts() {
         
         const matchesSearch = matchName || matchCat || matchAssigned || unitMatchAssign;
         const matchesCatFilter = filterCat === 'all' || p.category === filterCat;
+        const matchesLocFilter = filterLoc === 'all' || p.location === filterLoc;
         
         // If in assignments view, ignore category filter for now so they see all assignments easily
-        if (currentNavView === 'assignments') return matchesSearch;
+        if (currentNavView === 'assignments') return matchesSearch && matchesLocFilter;
         
-        return matchesSearch && matchesCatFilter;
+        return matchesSearch && matchesCatFilter && matchesLocFilter;
     });
 
     productsGrid.innerHTML = '';

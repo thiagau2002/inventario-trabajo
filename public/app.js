@@ -245,23 +245,77 @@ function exportToExcel() {
         return;
     }
     
-    // Format data for Excel
-    const data = products.map(p => ({
-        'ID': p.id,
-        'Nombre': p.name,
-        'Categoría': p.category,
-        'Marca/Modelo': p.brand,
-        'Nº Serie': p.serial,
-        'Ubicación': p.location,
-        'Condición': p.condition,
-        'Cantidad': p.quantity,
-        'Asignado a': p.assigned,
-        'Descripción': p.desc
-    }));
+    const dataDisponibles = [];
+    const dataReparacion = [];
+    const dataAsignados = [];
+    
+    products.forEach(p => {
+        let units = [];
+        try { units = JSON.parse(p.units || '[]'); } catch(e) {}
+        
+        if (units.length > 0) {
+            units.forEach((u, i) => {
+                const isRepair = u.condition === 'Para reparar';
+                const isAssigned = u.assigned && u.assigned.trim() !== '';
+                
+                const row = {
+                    'ID': `${p.id}-${i+1}`,
+                    'Nombre': p.name,
+                    'Categoría': p.category,
+                    'Marca/Modelo': p.brand,
+                    'Nº Serie': u.serial || p.serial,
+                    'Ubicación': p.location,
+                    'Condición': u.condition || p.condition,
+                    'Cantidad': 1,
+                    'Asignado a': u.assigned || p.assigned,
+                    'Descripción': p.desc
+                };
+                
+                if (isRepair) dataReparacion.push(row);
+                else if (isAssigned) dataAsignados.push(row);
+                else dataDisponibles.push(row);
+            });
+        } else {
+            const isRepair = p.condition === 'Para reparar' || p.condition === 'Atención (Variado)';
+            const isAssigned = p.assigned && p.assigned.trim() !== '' && p.assigned !== 'Varias asignaciones';
+            
+            const row = {
+                'ID': p.id,
+                'Nombre': p.name,
+                'Categoría': p.category,
+                'Marca/Modelo': p.brand,
+                'Nº Serie': p.serial,
+                'Ubicación': p.location,
+                'Condición': p.condition,
+                'Cantidad': p.quantity,
+                'Asignado a': p.assigned,
+                'Descripción': p.desc
+            };
+            
+            if (isRepair) dataReparacion.push(row);
+            else if (isAssigned) dataAsignados.push(row);
+            else dataDisponibles.push(row);
+        }
+    });
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+    
+    if (dataDisponibles.length > 0) {
+        const wsDisponibles = XLSX.utils.json_to_sheet(dataDisponibles);
+        XLSX.utils.book_append_sheet(workbook, wsDisponibles, "Disponibles");
+    }
+    if (dataReparacion.length > 0) {
+        const wsReparacion = XLSX.utils.json_to_sheet(dataReparacion);
+        XLSX.utils.book_append_sheet(workbook, wsReparacion, "En Reparación");
+    }
+    if (dataAsignados.length > 0) {
+        const wsAsignados = XLSX.utils.json_to_sheet(dataAsignados);
+        XLSX.utils.book_append_sheet(workbook, wsAsignados, "Asignados");
+    }
+    
+    if (dataDisponibles.length === 0 && dataReparacion.length === 0 && dataAsignados.length === 0) {
+        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([{"Aviso": "Sin datos"}]), "Inventario");
+    }
     
     // Generate file and trigger download
     const dateStr = new Date().toISOString().split('T')[0];

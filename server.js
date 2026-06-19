@@ -58,6 +58,50 @@ db.serialize(() => {
     const stmt = db.prepare("INSERT OR IGNORE INTO categories (name) VALUES (?)");
     defaultCategories.forEach(c => stmt.run(c));
     stmt.finalize();
+
+    // Migrate old condition tags to new ones without deleting elements
+    db.all("SELECT id, condition, units FROM products", (err, rows) => {
+        if (err || !rows) return;
+        const mapCond = (c) => {
+            if (!c) return c;
+            if (c === 'Usado' || c === 'Regular' || c === 'Perdido') return 'Buen estado';
+            if (c === 'Para reparar' || c === 'Roto' || c === 'Para reparar / Roto' || c === 'Dañado') return 'Dañado/Reparación';
+            return c;
+        };
+        db.all("PRAGMA table_info(products)", (err, cols) => {
+            if (err) return;
+            const hasUnits = cols.some(col => col.name === 'units');
+            const updateStmt = hasUnits 
+                ? db.prepare("UPDATE products SET condition = ?, units = ? WHERE id = ?")
+                : db.prepare("UPDATE products SET condition = ? WHERE id = ?");
+
+            for (let r of rows) {
+                let changed = false;
+                let c = r.condition;
+                const nc = mapCond(c);
+                if (nc !== c) { c = nc; changed = true; }
+
+                let nu = hasUnits ? r.units : null;
+                if (hasUnits && nu && nu !== '[]') {
+                    try {
+                        const arr = JSON.parse(nu);
+                        let uc = false;
+                        for (let u of arr) {
+                            const nuc = mapCond(u.condition);
+                            if (nuc !== u.condition) { u.condition = nuc; uc = true; changed = true; }
+                        }
+                        if (uc) nu = JSON.stringify(arr);
+                    } catch(e) {}
+                }
+
+                if (changed) {
+                    if (hasUnits) updateStmt.run([c, nu, r.id]);
+                    else updateStmt.run([c, r.id]);
+                }
+            }
+            updateStmt.finalize();
+        });
+    });
 });
 
 // --- Rutas API REST ---

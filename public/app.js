@@ -255,7 +255,7 @@ function exportToExcel() {
         
         if (units.length > 0) {
             units.forEach((u, i) => {
-                const isRepair = u.condition === 'Para reparar';
+                const isRepair = u.condition === 'Dañado/Reparación';
                 const isAssigned = u.assigned && u.assigned.trim() !== '';
                 
                 const row = {
@@ -276,7 +276,7 @@ function exportToExcel() {
                 else dataDisponibles.push(row);
             });
         } else {
-            const isRepair = p.condition === 'Para reparar' || p.condition === 'Atención (Variado)';
+            const isRepair = p.condition === 'Dañado/Reparación' || p.condition === 'Atención (Variado)';
             const isAssigned = p.assigned && p.assigned.trim() !== '' && p.assigned !== 'Varias asignaciones';
             
             const row = {
@@ -553,7 +553,7 @@ function updateStockBadge(product) {
     badge.className = 'status-badge';
     badge.style.background = '';
     
-    if (product.condition === 'Para reparar') {
+    if (product.condition === 'Dañado/Reparación') {
         badge.classList.add('status-out-stock');
         badge.style.background = 'rgba(239, 68, 68, 0.8)';
         badge.textContent = 'En Reparación';
@@ -575,11 +575,11 @@ let currentViewMode = localStorage.getItem('viewMode') || 'grid';
 let activeUnitsProductId = null;
 
 function getRepairCount(p) {
-    if (p.condition === 'Para reparar') return p.quantity;
+    if (p.condition === 'Dañado/Reparación') return p.quantity;
     if (p.units && p.units !== '[]') {
         try {
             const unitsArr = JSON.parse(p.units);
-            const badUnits = unitsArr.filter(u => u.condition === 'Para reparar').length;
+            const badUnits = unitsArr.filter(u => u.condition === 'Dañado/Reparación').length;
             if (badUnits > 0) return badUnits;
         } catch(e) {}
     }
@@ -767,10 +767,7 @@ window.openUnitsModal = function(id) {
                 <select class="glass-select unit-condition" style="font-size: 0.85rem;">
                     <option value="Nuevo" ${u.condition==='Nuevo'?'selected':''}>Nuevo</option>
                     <option value="Buen estado" ${u.condition==='Buen estado'?'selected':''}>Buen estado</option>
-                    <option value="Usado" ${u.condition==='Usado'?'selected':''}>Usado</option>
-                    <option value="Para reparar" ${u.condition==='Para reparar'?'selected':''}>Para reparar</option>
-                    <option value="Dañado" ${u.condition==='Dañado'?'selected':''}>Dañado</option>
-                    <option value="Perdido" ${u.condition==='Perdido'?'selected':''}>Perdido</option>
+                    <option value="Dañado/Reparación" ${u.condition==='Dañado/Reparación'?'selected':''}>Dañado/Reparación</option>
                 </select>
             </div>
         `;
@@ -793,7 +790,7 @@ async function saveUnits() {
         const condition = item.querySelector('.unit-condition').value;
         const serial = item.querySelector('.unit-serial').value;
         const assigned = item.querySelector('.unit-assigned').value.trim();
-        if (condition === 'Para reparar') needsRepair++;
+        if (condition === 'Dañado/Reparación') needsRepair++;
         newUnits.push({ id: index + 1, condition, serial, assigned });
     });
     
@@ -801,7 +798,7 @@ async function saveUnits() {
     
     // Automatically update the main condition if all are identical or if some need repair
     if (needsRepair > 0) {
-        if (needsRepair === product.quantity) product.condition = 'Para reparar';
+        if (needsRepair === product.quantity) product.condition = 'Dañado/Reparación';
         else product.condition = 'Atención (Variado)'; // Or we keep the main one
     } else {
         const allSame = newUnits.every(u => u.condition === newUnits[0].condition);

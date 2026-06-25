@@ -586,13 +586,15 @@ function getRepairCount(p) {
     return p.condition === 'Atención (Variado)' ? 1 : 0;
 }
 
-function getDonatedCount(p) {
-    if (p.assigned === 'Donación') return p.quantity;
+function getAssignedCount(p) {
     if (p.units && p.units !== '[]') {
         try {
             const unitsArr = JSON.parse(p.units);
-            return unitsArr.filter(u => u.assigned === 'Donación').length;
+            return unitsArr.filter(u => u.assigned && u.assigned.trim() !== '').length;
         } catch(e) {}
+    }
+    if (p.assigned && p.assigned.trim() !== '' && p.assigned !== 'Varias asignaciones') {
+        return p.quantity;
     }
     return 0;
 }
@@ -848,11 +850,11 @@ function renderProducts() {
     }
     
     const filtered = products.filter(p => {
-        const donatedCount = getDonatedCount(p);
+        const assignedCount = getAssignedCount(p);
         
         // Navigation Filters
         if (currentNavView === 'items') {
-            if ((donatedCount + getRepairCount(p)) >= p.quantity && p.quantity > 0) return false;
+            if ((assignedCount + getRepairCount(p)) >= p.quantity && p.quantity > 0) return false;
         } else if (currentNavView === 'repairs') {
             if (getRepairCount(p) === 0) return false;
         } else if (currentNavView === 'assignments') {
@@ -919,11 +921,11 @@ function renderProducts() {
         let customBadgeStyle = '';
         
         const repairs = getRepairCount(product);
-        const donated = getDonatedCount(product);
+        const assigned = getAssignedCount(product);
         
         let displayQty = product.quantity;
         if (currentNavView === 'items') {
-            displayQty = Math.max(0, product.quantity - donated - repairs);
+            displayQty = Math.max(0, product.quantity - assigned - repairs);
         } else if (currentNavView === 'repairs') {
             displayQty = repairs;
         } else if (currentNavView === 'assignments') {
